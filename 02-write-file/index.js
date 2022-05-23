@@ -8,7 +8,7 @@ const writeStream = fs.createWriteStream(
   'utf-8'
 );
 
-stdout.write('\033[32mHi! Where are you from?\n'); // \033[32m green
+stdout.write('Hi! Where are you from?\n'); // \033[32m green
 stdin.on('data', (data) => {
   writeStream.write(data);
   if (data.indexOf('exit') >= 0) process.exit();
@@ -16,9 +16,11 @@ stdin.on('data', (data) => {
 
 writeStream.on('error', (error) => console.log('Error: ', error.message));
 
+process.on('SIGINT', () => process.exit(0));
+
 process.on('exit', (code) => {
   if (code === 0) {
-    stdout.write('Good luck!');
+    stdout.write('\nThe end. Good luck!');
   } else {
     stderr.write(`Something happend. Error code: ${code}`);
   }
