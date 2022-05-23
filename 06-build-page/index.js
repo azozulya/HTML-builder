@@ -1,4 +1,4 @@
-const { readFile, readdir, copyFile } = require('fs/promises');
+const { readFile, readdir, copyFile, rm } = require('fs/promises');
 const path = require('path');
 const fs = require('fs');
 
@@ -6,12 +6,21 @@ const destFolder = 'project-dist';
 const assetsFolder = 'assets';
 const cssFolder = 'styles';
 
-(function () {
-  createDir(path.join(__dirname, destFolder));
-  copyDirectory(
+(async function () {
+  await rm(path.join(__dirname, destFolder), {
+    force: true,
+    recursive: true,
+  }).then((error) => {
+    if (error) console.log(error);
+  });
+
+  await createDir(path.join(__dirname, destFolder));
+
+  await copyDirectory(
     path.join(__dirname, assetsFolder),
     path.join(__dirname, destFolder, assetsFolder)
   );
+
   buildCss(path.join(__dirname, cssFolder), path.join(__dirname, destFolder));
   buildPage(
     path.join(__dirname, 'template.html'),
@@ -23,7 +32,6 @@ async function createDir(dir) {
   await fs.mkdir(dir, { recursive: true }, (err) => {
     if (err) throw err;
   });
-  console.log(`Create directory ${dir}`);
 }
 
 async function copyDirectory(src, dest) {
@@ -64,7 +72,6 @@ function buildCss(src, dest, name = 'style.css') {
           });
         }
       }
-      console.log('Build css');
     });
   } catch (err) {
     console.error(err);
@@ -88,7 +95,7 @@ function buildPage(template, dest, pageName = 'index.html') {
 
     const components = Array.from(matches, (match) => match[1]);
 
-    Promise.all(
+    Promise.allSettled(
       components.map((component) => {
         return readFile(
           path.join(__dirname, 'components', `${component}.html`),
@@ -99,10 +106,14 @@ function buildPage(template, dest, pageName = 'index.html') {
       .then((componentsBuffer) => {
         components.forEach((component, index) => {
           const regexp = new RegExp(`{{${component}}}`);
-          pageTemplate = pageTemplate.replace(regexp, componentsBuffer[index]);
+          pageTemplate = pageTemplate.replace(
+            regexp,
+            componentsBuffer[index].status === 'fulfilled'
+              ? componentsBuffer[index].value
+              : ''
+          );
         });
         writeStream.write(pageTemplate);
-        console.log(`Build ${pageName}`);
       })
       .catch((error) => console.error(error.message));
   });
