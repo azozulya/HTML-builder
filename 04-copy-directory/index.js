@@ -12,7 +12,6 @@ fs.mkdir(dest, { recursive: true }, (err) => {
   try {
     const files = await readdir(dir);
     for (const file of files) {
-      console.log(file);
       try {
         await copyFile(path.join(src, file), path.join(dest, file));
       } catch (error) {
